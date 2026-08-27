@@ -1,20 +1,38 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>SimpleMediator</RootNamespace>
+
+    <!-- Package Info -->
     <PackageId>SimpleMediator</PackageId>
     <Version>1.0.0</Version>
     <Authors>SimpleMediator Contributors</Authors>
+    <Company>SimpleMediator</Company>
+    <Product>SimpleMediator</Product>
+    <Copyright>Copyright (c) 2026 SimpleMediator Contributors</Copyright>
     <Description>A lightweight mediator pattern implementation for .NET 8+ with request/response, notifications, pipeline behaviors, and DI integration.</Description>
-    <PackageTags>mediator;cqrs;pipeline;dotnet;dependency-injection</PackageTags>
+    <PackageTags>mediator;cqrs;pipeline;dotnet;dependency-injection;mediator-pattern;request-response;notification</PackageTags>
+
+    <!-- License & Repository -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/user/simple-mediator</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/zhurongbo111/SimpleMediator</PackageProjectUrl>
+
+    <!-- Documentation -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />

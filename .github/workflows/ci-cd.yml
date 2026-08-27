@@ -1,14 +1,11 @@
-name: CI/CD
+name: CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 env:
   DOTNET_VERSION: '8.0.x'
-  NUGET_SOURCE: 'https://api.nuget.org/v3/index.json'
 
 jobs:
   build:
@@ -30,66 +27,3 @@ jobs:
 
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: nuget-packages
-        path: |
-          **/bin/Release/*.nupkg
-          **/bin/Release/*.snupkg
-
-  pack:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Determine version
-      id: version
-      run: |
-        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-          echo "version=1.0.0-preview.${{ github.run_number }}" >> $GITHUB_OUTPUT
-        else
-          echo "version=1.0.0" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Pack
-      run: dotnet pack src/SimpleMediator/SimpleMediator.csproj --configuration Release -p:Version=${{ steps.version.outputs.version }} --output ./nupkgs
-
-    - name: Upload NuGet package
-      uses: actions/upload-artifact@v4
-      with:
-        name: nuget-package
-        path: ./nupkgs/*.nupkg
-
-  publish:
-    needs: pack
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: production
-
-    steps:
-    - name: Download NuGet package
-      uses: actions/download-artifact@v4
-      with:
-        name: nuget-package
-        path: ./nupkgs
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Publish to NuGet
-      run: |
-        for pkg in ./nupkgs/*.nupkg; do
-          dotnet nuget push $pkg --source ${{ env.NUGET_SOURCE }} --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
-        done

@@ -55,7 +55,7 @@ public static class SimpleMediatorServiceCollectionExtensions
     /// <returns>The IServiceCollection for chaining.</returns>
     public static IServiceCollection AddSimpleMediator(this IServiceCollection services, IEnumerable<Assembly> assemblies)
     {
-        // Register IMediator as singleton
+        // Register IMediator as transient (uses current scope's IServiceProvider)
         services.TryAddTransient<IMediator, Mediator>();
 
         var assembliesArray = assemblies.ToArray();

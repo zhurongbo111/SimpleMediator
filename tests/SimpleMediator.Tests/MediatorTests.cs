@@ -10,11 +10,20 @@ namespace SimpleMediator.Tests;
 public record TestRequest(string Message) : IRequest<string>;
 public record TestNotification(string Message) : INotification;
 public record PipelineTestRequest(string Message) : IRequest<string>;
+public record BasicRequest(string Message) : IRequest<string>;
 
 // Test handler
 public class TestRequestHandler : IRequestHandler<TestRequest, string>
 {
     public Task<string> Handle(TestRequest request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult($"Handled: {request.Message}");
+    }
+}
+
+public class BasicRequestHandler : IRequestHandler<BasicRequest, string>
+{
+    public Task<string> Handle(BasicRequest request, CancellationToken cancellationToken)
     {
         return Task.FromResult($"Handled: {request.Message}");
     }
@@ -95,7 +104,7 @@ public class TestPostProcessor : IPostProcessor<PipelineTestRequest, string>
     }
 }
 
-// Short-circuit behavior
+// Short-circuit behavior for TestRequest only
 public class ShortCircuitBehavior : IPipelineBehavior<TestRequest, string>
 {
     public Task<string> Handle(TestRequest request, RequestHandlerDelegate<string> next, CancellationToken cancellationToken)
@@ -111,13 +120,12 @@ public class MediatorTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddTransient<IRequestHandler<TestRequest, string>, TestRequestHandler>();
-        services.AddSingleton<IMediator, Mediator>();
+        services.AddSimpleMediator(typeof(MediatorTests).Assembly);
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act
-        var response = await mediator.Send(new TestRequest("Hello"));
+        var response = await mediator.Send(new BasicRequest("Hello"));
 
         // Assert
         Assert.Equal("Handled: Hello", response);
@@ -131,9 +139,7 @@ public class MediatorTests
         TestNotificationHandler2.HandledMessages.Clear();
 
         var services = new ServiceCollection();
-        services.AddTransient<INotificationHandler<TestNotification>, TestNotificationHandler1>();
-        services.AddTransient<INotificationHandler<TestNotification>, TestNotificationHandler2>();
-        services.AddSingleton<IMediator, Mediator>();
+        services.AddSimpleMediator(typeof(MediatorTests).Assembly);
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
@@ -150,7 +156,7 @@ public class MediatorTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddSingleton<IMediator, Mediator>();
+        services.AddSimpleMediator(typeof(MediatorTests).Assembly);
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
@@ -168,11 +174,7 @@ public class MediatorTests
         TestPostProcessor.ExecutionOrder.Clear();
 
         var services = new ServiceCollection();
-        services.AddTransient<IRequestHandler<PipelineTestRequest, string>, PipelineTestRequestHandler>();
-        services.AddTransient<IPipelineBehavior<PipelineTestRequest, string>, TestPipelineBehavior>();
-        services.AddTransient<IPreProcessor<PipelineTestRequest>, TestPreProcessor>();
-        services.AddTransient<IPostProcessor<PipelineTestRequest, string>, TestPostProcessor>();
-        services.AddSingleton<IMediator, Mediator>();
+        services.AddSimpleMediator(typeof(MediatorTests).Assembly);
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
@@ -191,9 +193,7 @@ public class MediatorTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddTransient<IPipelineBehavior<TestRequest, string>, ShortCircuitBehavior>();
-        services.AddTransient<IRequestHandler<TestRequest, string>, TestRequestHandler>();
-        services.AddSingleton<IMediator, Mediator>();
+        services.AddSimpleMediator(typeof(MediatorTests).Assembly);
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
@@ -209,7 +209,7 @@ public class MediatorTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddSingleton<IMediator, Mediator>();
+        services.AddSimpleMediator(typeof(MediatorTests).Assembly);
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
@@ -232,7 +232,7 @@ public class MediatorTests
         Assert.NotNull(mediator);
         Assert.IsType<Mediator>(mediator);
 
-        var handler = provider.GetService<IRequestHandler<TestRequest, string>>();
+        var handler = provider.GetService<IRequestHandler<BasicRequest, string>>();
         Assert.NotNull(handler);
 
         var notificationHandler = provider.GetService<INotificationHandler<TestNotification>>();
@@ -240,7 +240,7 @@ public class MediatorTests
     }
 
     [Fact]
-    public void AddSimpleMediator_SingletonMediator_ReturnsSameInstance()
+    public void AddSimpleMediator_TransientMediator_ReturnsNewInstance()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -251,8 +251,8 @@ public class MediatorTests
         var mediator1 = provider.GetRequiredService<IMediator>();
         var mediator2 = provider.GetRequiredService<IMediator>();
 
-        // Assert
-        Assert.Same(mediator1, mediator2);
+        // Assert - Transient returns new instances (but they share the same IServiceProvider)
+        Assert.NotSame(mediator1, mediator2);
     }
 
     [Fact]
@@ -269,11 +269,57 @@ public class MediatorTests
         var mediator = provider.GetService<IMediator>();
         Assert.NotNull(mediator);
 
-        var handler = provider.GetService<IRequestHandler<TestRequest, string>>();
+        var handler = provider.GetService<IRequestHandler<BasicRequest, string>>();
         Assert.NotNull(handler);
 
         var notificationHandler = provider.GetService<INotificationHandler<TestNotification>>();
         Assert.NotNull(notificationHandler);
+    }
+
+    [Fact]
+    public async Task Send_Request_HandlerWithScopedService_WorksCorrectly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddSimpleMediator(typeof(MediatorTests).Assembly);
+        services.AddScoped<IScopedService, ScopedService>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act
+        var response = await mediator.Send(new ScopedRequest());
+
+        // Assert
+        Assert.Equal("Scoped: test", response);
+    }
+}
+
+// Test scoped service
+public interface IScopedService
+{
+    string GetValue();
+}
+
+public class ScopedService : IScopedService
+{
+    public string GetValue() => "Scoped: test";
+}
+
+// Test request that uses scoped service
+public record ScopedRequest() : IRequest<string>;
+
+public class ScopedRequestHandler : IRequestHandler<ScopedRequest, string>
+{
+    private readonly IScopedService _scopedService;
+
+    public ScopedRequestHandler(IScopedService scopedService)
+    {
+        _scopedService = scopedService;
+    }
+
+    public Task<string> Handle(ScopedRequest request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(_scopedService.GetValue());
     }
 }
 

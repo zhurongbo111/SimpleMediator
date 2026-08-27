@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleMediator.Abstractions;
@@ -12,6 +13,24 @@ public sealed class Mediator : IMediator
 {
     private readonly IServiceProvider _serviceProvider;
 
+    // Cache for handler types: (requestType, responseType) -> handlerType
+    private static readonly ConcurrentDictionary<Type, Type> _handlerTypeCache = new();
+
+    // Cache for notification handler types: notificationType -> handlerType
+    private static readonly ConcurrentDictionary<Type, Type> _notificationHandlerTypeCache = new();
+
+    // Cache for Handle method: handlerType -> MethodInfo
+    private static readonly ConcurrentDictionary<Type, MethodInfo> _handleMethodCache = new();
+
+    // Cache for pipeline behavior types: (requestType, responseType) -> behaviorType
+    private static readonly ConcurrentDictionary<Type, Type> _behaviorTypeCache = new();
+
+    // Cache for pre-processor types: requestType -> preProcessorType
+    private static readonly ConcurrentDictionary<Type, Type> _preProcessorTypeCache = new();
+
+    // Cache for post-processor types: (requestType, responseType) -> postProcessorType
+    private static readonly ConcurrentDictionary<Type, Type> _postProcessorTypeCache = new();
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Mediator"/> class.
     /// </summary>
@@ -24,26 +43,40 @@ public sealed class Mediator : IMediator
     /// <inheritdoc/>
     public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        var handlerType = typeof(IRequestHandler<,>).MakeGenericType(request.GetType(), typeof(TResponse));
+        var requestType = request.GetType();
+        var responseType = typeof(TResponse);
+
+        // Get or create handler type
+        var handlerType = _handlerTypeCache.GetOrAdd(requestType,
+            rt => typeof(IRequestHandler<,>).MakeGenericType(rt, responseType));
+
         var handler = _serviceProvider.GetService(handlerType);
 
         if (handler is null)
         {
-            throw new InvalidOperationException($"No handler registered for request type {request.GetType().Name}");
+            throw new InvalidOperationException($"No handler registered for request type {requestType.Name}");
         }
 
-        var handleMethod = handlerType.GetMethod("Handle")!;
+        // Get or create Handle method
+        var handleMethod = _handleMethodCache.GetOrAdd(handlerType,
+            ht => ht.GetMethod("Handle")!);
 
-        // Get pipeline behaviors
-        var behaviorType = typeof(IPipelineBehavior<,>).MakeGenericType(request.GetType(), typeof(TResponse));
+        // Get pipeline behavior type
+        var behaviorType = _behaviorTypeCache.GetOrAdd(requestType,
+            rt => typeof(IPipelineBehavior<,>).MakeGenericType(rt, responseType));
+
         var behaviors = _serviceProvider.GetServices(behaviorType).Reverse().ToList();
 
-        // Get pre-processors
-        var preProcessorType = typeof(IPreProcessor<>).MakeGenericType(request.GetType());
+        // Get pre-processor type
+        var preProcessorType = _preProcessorTypeCache.GetOrAdd(requestType,
+            rt => typeof(IPreProcessor<>).MakeGenericType(rt));
+
         var preProcessors = _serviceProvider.GetServices(preProcessorType).ToList();
 
-        // Get post-processors
-        var postProcessorType = typeof(IPostProcessor<,>).MakeGenericType(request.GetType(), typeof(TResponse));
+        // Get post-processor type
+        var postProcessorType = _postProcessorTypeCache.GetOrAdd(requestType,
+            rt => typeof(IPostProcessor<,>).MakeGenericType(rt, responseType));
+
         var postProcessors = _serviceProvider.GetServices(postProcessorType).ToList();
 
         // Build the pipeline
@@ -52,7 +85,8 @@ public sealed class Mediator : IMediator
             // Run pre-processors
             foreach (var preProcessor in preProcessors)
             {
-                var preProcessMethod = preProcessorType.GetMethod("Process")!;
+                var preProcessMethod = _handleMethodCache.GetOrAdd(preProcessorType,
+                    pt => pt.GetMethod("Process")!);
                 await (Task)preProcessMethod.Invoke(preProcessor, new object[] { request, ct })!;
             }
 
@@ -62,7 +96,8 @@ public sealed class Mediator : IMediator
             // Run post-processors
             foreach (var postProcessor in postProcessors)
             {
-                var postProcessMethod = postProcessorType.GetMethod("Process")!;
+                var postProcessMethod = _handleMethodCache.GetOrAdd(postProcessorType,
+                    pt => pt.GetMethod("Process")!);
                 await (Task)postProcessMethod.Invoke(postProcessor, new object[] { request, response!, ct })!;
             }
 
@@ -76,8 +111,9 @@ public sealed class Mediator : IMediator
             var behaviorCapture = behavior;
             pipeline = async ct =>
             {
-                var handleMethod = behaviorType.GetMethod("Handle")!;
-                return await (Task<TResponse>)handleMethod.Invoke(behaviorCapture, new object[] { request, next, ct })!;
+                var behaviorHandleMethod = _handleMethodCache.GetOrAdd(behaviorType,
+                    bt => bt.GetMethod("Handle")!);
+                return await (Task<TResponse>)behaviorHandleMethod.Invoke(behaviorCapture, new object[] { request, next, ct })!;
             };
         }
 
@@ -87,7 +123,12 @@ public sealed class Mediator : IMediator
     /// <inheritdoc/>
     public async Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification
     {
-        var handlerType = typeof(INotificationHandler<>).MakeGenericType(typeof(TNotification));
+        var notificationType = typeof(TNotification);
+
+        // Get or create notification handler type
+        var handlerType = _notificationHandlerTypeCache.GetOrAdd(notificationType,
+            nt => typeof(INotificationHandler<>).MakeGenericType(nt));
+
         var handlers = _serviceProvider.GetServices(handlerType).ToList();
 
         if (handlers.Count == 0)
@@ -95,9 +136,12 @@ public sealed class Mediator : IMediator
             return;
         }
 
+        // Get or create Handle method
+        var handleMethod = _handleMethodCache.GetOrAdd(handlerType,
+            ht => ht.GetMethod("Handle")!);
+
         var tasks = handlers.Select(handler =>
         {
-            var handleMethod = handlerType.GetMethod("Handle")!;
             return (Task)handleMethod.Invoke(handler, new object[] { notification, cancellationToken })!;
         });
 

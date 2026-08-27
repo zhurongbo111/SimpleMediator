@@ -1,4 +1,4 @@
-namespace SimpleMediator.Pipeline;
+namespace DeepCode.SimpleMediator.Pipeline;
 
 /// <summary>
 /// Delegate that represents the next step in the pipeline.

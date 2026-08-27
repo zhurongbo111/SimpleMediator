@@ -1,4 +1,4 @@
-namespace SimpleMediator.Pipeline;
+namespace DeepCode.SimpleMediator.Pipeline;
 
 /// <summary>
 /// Pre-processor that runs before the request handler.

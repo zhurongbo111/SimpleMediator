@@ -1,6 +1,6 @@
-using SimpleMediator.Abstractions;
+using DeepCode.SimpleMediator.Abstractions;
 
-namespace SimpleMediator.Pipeline;
+namespace DeepCode.SimpleMediator.Pipeline;
 
 /// <summary>
 /// Pipeline behavior that wraps request handling.

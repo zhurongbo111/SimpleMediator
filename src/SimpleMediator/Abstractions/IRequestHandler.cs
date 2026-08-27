@@ -1,4 +1,4 @@
-namespace SimpleMediator.Abstractions;
+namespace DeepCode.SimpleMediator.Abstractions;
 
 /// <summary>
 /// Handles a request and returns a response.

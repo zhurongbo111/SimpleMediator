@@ -1,4 +1,4 @@
-namespace SimpleMediator.Pipeline;
+namespace DeepCode.SimpleMediator.Pipeline;
 
 /// <summary>
 /// Post-processor that runs after the request handler.

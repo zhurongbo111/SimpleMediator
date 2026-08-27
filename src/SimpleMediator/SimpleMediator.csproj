@@ -4,15 +4,15 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>SimpleMediator</RootNamespace>
+    <RootNamespace>DeepCode.SimpleMediator</RootNamespace>
 
     <!-- Package Info -->
-    <PackageId>SimpleMediator</PackageId>
+    <PackageId>DeepCode.SimpleMediator</PackageId>
     <Version>1.0.0</Version>
-    <Authors>SimpleMediator Contributors</Authors>
-    <Company>SimpleMediator</Company>
-    <Product>SimpleMediator</Product>
-    <Copyright>Copyright (c) 2026 SimpleMediator Contributors</Copyright>
+    <Authors>DeepCode.SimpleMediator Contributors</Authors>
+    <Company>DeepCode.SimpleMediator</Company>
+    <Product>DeepCode.SimpleMediator</Product>
+    <Copyright>Copyright (c) 2026 DeepCode.SimpleMediator Contributors</Copyright>
     <Description>A lightweight mediator pattern implementation for .NET 8+ with request/response, notifications, pipeline behaviors, and DI integration.</Description>
     <PackageTags>mediator;cqrs;pipeline;dotnet;dependency-injection;mediator-pattern;request-response;notification</PackageTags>
 

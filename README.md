@@ -1,11 +1,11 @@
-# SimpleMediator
+# DeepCode.SimpleMediator
 
 A lightweight .NET 8+ Mediator pattern library for implementing in-process messaging with support for request/response, notifications, pipeline behaviors, and pre/post processors.
 
 ## Installation
 
 ```bash
-dotnet add package SimpleMediator
+dotnet add package DeepCode.SimpleMediator
 ```
 
 ## Features
@@ -290,10 +290,10 @@ services.AddTransient(typeof(IPostProcessor<,>), typeof(CachePostProcessor<,>));
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using SimpleMediator;
-using SimpleMediator.Abstractions;
-using SimpleMediator.DependencyInjection;
-using SimpleMediator.Pipeline;
+using DeepCode.SimpleMediator;
+using DeepCode.SimpleMediator.Abstractions;
+using DeepCode.SimpleMediator.DependencyInjection;
+using DeepCode.SimpleMediator.Pipeline;
 
 // Request and handler
 public record CreateUserCommand(string Name, string Email) : IRequest<int>;

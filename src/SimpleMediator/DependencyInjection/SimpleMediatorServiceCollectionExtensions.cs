@@ -1,10 +1,10 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using SimpleMediator.Abstractions;
-using SimpleMediator.Pipeline;
+using DeepCode.SimpleMediator.Abstractions;
+using DeepCode.SimpleMediator.Pipeline;
 
-namespace SimpleMediator.DependencyInjection;
+namespace DeepCode.SimpleMediator.DependencyInjection;
 
 /// <summary>
 /// Extension methods for registering SimpleMediator services.

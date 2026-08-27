@@ -1,6 +1,6 @@
-using SimpleMediator.Abstractions;
+using DeepCode.SimpleMediator.Abstractions;
 
-namespace SimpleMediator;
+namespace DeepCode.SimpleMediator;
 
 /// <summary>
 /// Primary entry point for sending requests and publishing notifications.

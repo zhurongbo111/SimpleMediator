@@ -1,4 +1,4 @@
-namespace SimpleMediator.Abstractions;
+namespace DeepCode.SimpleMediator.Abstractions;
 
 /// <summary>
 /// Marker interface for a notification.

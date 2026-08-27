@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
-using SimpleMediator.Abstractions;
-using SimpleMediator.Pipeline;
+using DeepCode.SimpleMediator.Abstractions;
+using DeepCode.SimpleMediator.Pipeline;
 
-namespace SimpleMediator;
+namespace DeepCode.SimpleMediator;
 
 /// <summary>
 /// Default implementation of IMediator using dependency injection.

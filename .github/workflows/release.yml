@@ -24,10 +24,10 @@ jobs:
 
 
     - name: Build and Test
-      run: dotnet test -c Release
+      run: dotnet test DeepCore.SimpleMediator.sln -c Release
 
     - name: pack package
-      run: dotnet pack -c Release
+      run: dotnet pack DeepCore.SimpleMediator.sln -c Release
       # Get a short-lived NuGet API key
     - name: NuGet login (OIDC → temp API key)
       uses: NuGet/login@v1

@@ -8,6 +8,11 @@ namespace SimpleMediator.Pipeline;
 public interface IPostProcessor<in TRequest, in TResponse>
 {
     /// <summary>
+    /// The execution order of this post-processor. Lower values execute first.
+    /// </summary>
+    int Order => 0;
+
+    /// <summary>
     /// Processes the response after the handler executes.
     /// </summary>
     Task Process(TRequest request, TResponse response, CancellationToken cancellationToken);

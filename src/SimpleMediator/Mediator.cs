@@ -22,6 +22,9 @@ public sealed class Mediator : IMediator
     // Cache for Handle method: handlerType -> MethodInfo
     private static readonly ConcurrentDictionary<Type, MethodInfo> _handleMethodCache = new();
 
+    // Cache for Order property: type -> PropertyInfo
+    private static readonly ConcurrentDictionary<Type, PropertyInfo?> _orderPropertyCache = new();
+
     // Cache for pipeline behavior types: (requestType, responseType) -> behaviorType
     private static readonly ConcurrentDictionary<Type, Type> _behaviorTypeCache = new();
 
@@ -65,19 +68,25 @@ public sealed class Mediator : IMediator
         var behaviorType = _behaviorTypeCache.GetOrAdd(requestType,
             rt => typeof(IPipelineBehavior<,>).MakeGenericType(rt, responseType));
 
-        var behaviors = _serviceProvider.GetServices(behaviorType).Reverse().ToList();
+        var behaviors = _serviceProvider.GetServices(behaviorType)
+            .OrderBy(b => GetOrder(b, behaviorType))
+            .ToList();
 
         // Get pre-processor type
         var preProcessorType = _preProcessorTypeCache.GetOrAdd(requestType,
             rt => typeof(IPreProcessor<>).MakeGenericType(rt));
 
-        var preProcessors = _serviceProvider.GetServices(preProcessorType).ToList();
+        var preProcessors = _serviceProvider.GetServices(preProcessorType)
+            .OrderBy(p => GetOrder(p, preProcessorType))
+            .ToList();
 
         // Get post-processor type
         var postProcessorType = _postProcessorTypeCache.GetOrAdd(requestType,
             rt => typeof(IPostProcessor<,>).MakeGenericType(rt, responseType));
 
-        var postProcessors = _serviceProvider.GetServices(postProcessorType).ToList();
+        var postProcessors = _serviceProvider.GetServices(postProcessorType)
+            .OrderBy(p => GetOrder(p, postProcessorType))
+            .ToList();
 
         // Build the pipeline
         RequestHandlerDelegate<TResponse> pipeline = async ct =>
@@ -104,8 +113,8 @@ public sealed class Mediator : IMediator
             return response!;
         };
 
-        // Wrap with behaviors (outermost first)
-        foreach (var behavior in behaviors)
+        // Wrap with behaviors (outermost first, so we reverse the sorted list)
+        foreach (var behavior in behaviors.AsEnumerable().Reverse())
         {
             var next = pipeline;
             var behaviorCapture = behavior;
@@ -146,5 +155,23 @@ public sealed class Mediator : IMediator
         });
 
         await Task.WhenAll(tasks);
+    }
+
+    private static int GetOrder(object? instance, Type interfaceType)
+    {
+        if (instance is null)
+        {
+            return 0;
+        }
+
+        var property = _orderPropertyCache.GetOrAdd(interfaceType,
+            t => t.GetProperty("Order"));
+
+        if (property is null)
+        {
+            return 0;
+        }
+
+        return (int)(property.GetValue(instance) ?? 0);
     }
 }

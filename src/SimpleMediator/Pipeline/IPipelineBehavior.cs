@@ -10,6 +10,11 @@ namespace SimpleMediator.Pipeline;
 public interface IPipelineBehavior<in TRequest, TResponse> where TRequest : IRequest<TResponse>
 {
     /// <summary>
+    /// The execution order of this behavior. Lower values execute first.
+    /// </summary>
+    int Order => 0;
+
+    /// <summary>
     /// Handles the request and invokes the next behavior or handler in the pipeline.
     /// </summary>
     Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken);

@@ -292,6 +292,30 @@ public class MediatorTests
         // Assert
         Assert.Equal("Scoped: test", response);
     }
+
+    [Fact]
+    public async Task Send_Request_BehaviorsExecuteInOrderProperty()
+    {
+        // Arrange
+        OrderedBehavior1.ExecutionLog.Clear();
+        OrderedBehavior2.ExecutionLog.Clear();
+
+        var services = new ServiceCollection();
+        services.AddTransient<IRequestHandler<OrderedRequest, string>, OrderedRequestHandler>();
+        services.AddTransient<IPipelineBehavior<OrderedRequest, string>, OrderedBehavior1>();
+        services.AddTransient<IPipelineBehavior<OrderedRequest, string>, OrderedBehavior2>();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act
+        var response = await mediator.Send(new OrderedRequest("Test"));
+
+        // Assert - Order 1 should execute before Order 2
+        Assert.Equal(2, OrderedBehavior1.ExecutionLog.Count);
+        Assert.Equal(2, OrderedBehavior2.ExecutionLog.Count);
+        Assert.True(OrderedBehavior1.ExecutionLog[0] < OrderedBehavior2.ExecutionLog[0]);
+    }
 }
 
 // Test scoped service
@@ -325,3 +349,42 @@ public class ScopedRequestHandler : IRequestHandler<ScopedRequest, string>
 
 // Unhandled request for testing
 public record UnhandledRequest() : IRequest<string>;
+
+// Ordered behavior test types
+public record OrderedRequest(string Message) : IRequest<string>;
+
+public class OrderedRequestHandler : IRequestHandler<OrderedRequest, string>
+{
+    public Task<string> Handle(OrderedRequest request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult($"Handled: {request.Message}");
+    }
+}
+
+public class OrderedBehavior1 : IPipelineBehavior<OrderedRequest, string>
+{
+    public static List<long> ExecutionLog { get; } = new();
+    public int Order => 1;
+
+    public async Task<string> Handle(OrderedRequest request, RequestHandlerDelegate<string> next, CancellationToken cancellationToken)
+    {
+        ExecutionLog.Add(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        var response = await next(cancellationToken);
+        ExecutionLog.Add(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        return response;
+    }
+}
+
+public class OrderedBehavior2 : IPipelineBehavior<OrderedRequest, string>
+{
+    public static List<long> ExecutionLog { get; } = new();
+    public int Order => 2;
+
+    public async Task<string> Handle(OrderedRequest request, RequestHandlerDelegate<string> next, CancellationToken cancellationToken)
+    {
+        ExecutionLog.Add(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        var response = await next(cancellationToken);
+        ExecutionLog.Add(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        return response;
+    }
+}

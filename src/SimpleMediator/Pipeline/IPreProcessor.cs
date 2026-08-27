@@ -7,6 +7,11 @@ namespace SimpleMediator.Pipeline;
 public interface IPreProcessor<in TRequest>
 {
     /// <summary>
+    /// The execution order of this pre-processor. Lower values execute first.
+    /// </summary>
+    int Order => 0;
+
+    /// <summary>
     /// Processes the request before the handler executes.
     /// </summary>
     Task Process(TRequest request, CancellationToken cancellationToken);

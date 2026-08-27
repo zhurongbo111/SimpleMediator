@@ -1,0 +1,6 @@
+# Default code owners for the repository
+* @zhurongbo111
+
+# Specific paths can be overridden below
+# src/ @zhurongbo111
+# tests/ @zhurongbo111

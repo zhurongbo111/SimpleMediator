@@ -20,7 +20,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore DeepCore.SimpleMediator.sln
 
     - name: Build
       run: dotnet build DeepCore.SimpleMediator.sln --no-restore --configuration Release

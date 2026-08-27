@@ -19,7 +19,7 @@
     <!-- License & Repository -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <RepositoryUrl>https://github.com/user/simple-mediator</RepositoryUrl>
+    <RepositoryUrl>https://github.com/zhurongbo111/SimpleMediator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/zhurongbo111/SimpleMediator</PackageProjectUrl>
 
